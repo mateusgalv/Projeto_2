@@ -373,8 +373,7 @@ mainwindow.o: mainwindow.cpp mainwindow.h \
 		ui_mainwindow.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o mainwindow.o mainwindow.cpp
 
-trem.o: trem.cpp trem.h \
-		coordenadas.h
+trem.o: trem.cpp trem.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o trem.o trem.cpp
 
 moc_mainwindow.o: moc_mainwindow.cpp 
