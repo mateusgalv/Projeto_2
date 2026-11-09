@@ -7,32 +7,19 @@
 #include "trem.h"
 #include <QtCore>
 
+// ESTADOS E DEFINICOES
 #define TRUE 1
-
-// ESTADOS E DEFINICOES DOS TRENS
+#define VAZIO -1
 #define N_TRENS 6
-#define ESPERANDO 0
-#define TRABALHANDO 1
-
-// ESTADOS E DEFINICOES DOS TRILHOS
+#define N_PONTOS 16
 #define N_TRILHOS 21
-#define LIVRE 1
+
 #define OCUPADO 0
+#define LIVRE 1
+#define ESPERANDO 1
 
-typedef struct {
-    int id;
-    int id_proximo;
-    int x_inicial;
-    int y_inicial;
-    int x_final;
-    int y_final;
-} Trilho;
-
-// ESTADOS E DEFINICOES DOS SEMAFOROS
-sem_t sem_trilhos[N_TRILHOS];
-
-// DADOS
 const int coordenadas[16][2] = {
+    // PONTOS (x, y)
     { 125,  50 },   // P1
     { 125, 150 },   // P2
     { 275, 150 },   // P3
@@ -50,161 +37,150 @@ const int coordenadas[16][2] = {
     { 500, 350 },   // P15
     { 500, 250 },   // P16
 };
-const int percursos_pontos[N_TRENS][5] = {
-    // trilho em uso = percurso[ID-1][i]
-    {  1,  2,  3,  4,  5 }, // Trem 1
+const int percursos_por_pontos[N_TRENS][5] = {
+    // Ordem circular de acesso aos cruzamentos
+    {  1,  2,  3,  4,  5 }, // Trem 1 
     {  2,  6,  7,  8,  3 }, // Trem 2
     {  3,  8,  9, 10,  4 }, // Trem 3
     { 11, 12, 13,  7,  6 }, // Trem 4
     {  7, 13, 14,  9,  8 }, // Trem 5
     {  9, 14, 15, 16, 10 }  // Trem 6
+    /*
+     * Um Ponto N está na posição (N-1) de coordenadas
+    */ 
 };
-
-const int percursos_trilhos[N_TRENS][5] = {
+const int percursos_por_trilhos[N_TRENS][5] = {
+    // Ordem circular de acesso aos trilhos
     {  1,  2,  3,  4,  5 }, // Trem 1
     {  6,  7,  8,  9,  2 }, // Trem 2
     {  9, 10, 11, 12,  3 }, // Trem 3
     { 14, 15, 16,  7, 13 }, // Trem 4
     { 16, 17, 18, 10,  8 }, // Trem 5
     { 18, 19, 20, 21, 11 }  // Trem 6
+    /*
+     * O semáforo de um trilho N está na posição (N-1) de sem_trilho[N_TRILHOS]
+    */
 };
+
+// SEMAFOROS E REGIOES CRITICAS
+sem_t sem_trilhos[N_TRILHOS];
 
 //Construtor
 Trem::Trem(int ID, int x, int y) {
     this->ID = ID;
     this->x = x;
     this->y = y;
-    this->velocidade = 50;
-    this->estado = ESPERANDO;
+    this->velocidade = 5;
+    this->estado_trem = ESPERANDO;
+}
+
+int Trem::get_velocidade() {
+    return velocidade.load();
+}
+void Trem::set_velocidade(int nova_velocidade) {
+    velocidade.store(nova_velocidade);
 }
 
 void Trem::mover_em_x(int distancia_percorrida) {
     x += distancia_percorrida;
 }
-
 void Trem::mover_em_y(int distancia_percorrida) {
     y += distancia_percorrida;
 }
 
+
 void Trem::iniciar_semaforos() {
-    // trilhos iniciais devem começar OCUPADOS
-    for (int i = 0; i < N_TRILHOS; i++) {
-        if ( i == 0 || i == 5 || i == 8 || i == 13 || i == 15 || i == 17) {
-            // trilhos 1, 6, 9, 14, 16, 18 OCUPADOS
-            sem_init(&sem_trilhos[i], 0, OCUPADO);
-        } else {
-            sem_init(&sem_trilhos[i], 0, LIVRE);
-        }
+        for (int j = 0; j < N_TRILHOS; j++) {
+        // Todos os trilhos iniciam livres - Trens começam ocupando cruzamentos.
+        sem_init(&sem_trilhos[j], 0, LIVRE);
     }
 }
 
-int Trem::get_trilho(int p1, int p2) {
-    // retorna o numero do trilho entre dois pontos p1 e p2
-    if (p1 == 1 && p2 == 2) return 1;
-    else if ((p1 ==  2 && p2 ==  3) || (p1 ==  3 && p2 ==  2)) return 2;
-    else if ((p1 ==  3 && p2 ==  4) || (p1 ==  4 && p2 ==  3)) return 3;
-    else if (p1 ==  4 && p2 ==  5) return 4;
-    else if (p1 ==  5 && p2 ==  1) return 5;
-    else if ((p1 ==  2 && p2 ==  6) || (p1 ==  6 && p2 ==  2)) return 6;
-    else if ((p1 ==  6 && p2 ==  7) || (p1 ==  7 && p2 ==  6)) return 7;
-    else if ((p1 ==  7 && p2 ==  8) || (p1 ==  8 && p2 ==  7)) return 8;
-    else if ((p1 ==  8 && p2 ==  3) || (p1 ==  3 && p2 ==  8)) return 9;
-    else if ((p1 ==  8 && p2 ==  9) || (p1 ==  9 && p2 ==  8)) return 10;
-    else if ((p1 ==  9 && p2 == 10) || (p1 == 10 && p2 ==  9)) return 11;
-    else if (p1 == 10 && p2 ==  4) return 12;
-    else if (p1 ==  6 && p2 == 11) return 13;
-    else if (p1 == 11 && p2 == 12) return 14;
-    else if (p1 == 12 && p2 == 13) return 15;
-    else if ((p1 == 13 && p2 ==  7) || (p1 ==  7 && p2 == 13)) return 16;
-    else if (p1 == 13 && p2 == 14) return 17;
-    else if ((p1 == 14 && p2 ==  9) || (p1 ==  9 && p2 == 14)) return 18;
-    else if (p1 == 14 && p2 == 15) return 19;
-    else if (p1 == 15 && p2 == 16) return 20;
-    else if (p1 == 16 && p2 == 10) return 21;
-    else return -1;
-}
-
-void Trem::percorrer_trilho() {
-    int distancia_percorrida;
-    const int *percurso_pontos = percursos_pontos[ID - 1];
-    const int *percurso_trilhos = percursos_trilhos[ID - 1];
-    Trilho trilho;
-    
-    int atual = 0;
-    while(TRUE) {
-        int ponto_atual = percurso_pontos[atual % 5];
-        int ponto_seguinte = percurso_pontos[(atual + 1) % 5];
-        
-        int trilho_atual = (percurso_trilhos[atual % 5]);
-        int trilho_seguinte = (percurso_trilhos[(atual + 1) % 5]);
-        int trilho_pre_reserva = (percurso_trilhos[(atual + 2) % 5]);
-        
-        trilho.id = trilho_atual;
-        trilho.id_proximo = trilho_seguinte;
-
-        const int *coordenada_atual = coordenadas[ponto_atual - 1];
-        const int *coordenada_seguinte = coordenadas[ponto_seguinte - 1];
-
-        trilho.x_inicial = coordenada_atual[0];
-        trilho.y_inicial = coordenada_atual[1];
-
-        trilho.x_final = coordenada_seguinte[0];
-        trilho.y_final = coordenada_seguinte[1];
-
-        // Checa direção do trem:
-        if (trilho.x_inicial == trilho.x_final) {
-            // x = cte → move em Y (vertical)
-            // Checa sentido do trem:
-            if (trilho.y_final > trilho.y_inicial) {
-                // Trem se movimenta cima → baixo (incrementa y)
-                distancia_percorrida = ((trilho.y_final - y < velocidade) ?
-                    trilho.y_final - y : velocidade
-                );
-                mover_em_y(distancia_percorrida);
-            } else if (trilho.y_final < trilho.y_inicial) {
-                // Trem se movimenta baixo → cima (decrementa y)
-                distancia_percorrida = ((y - trilho.y_final < velocidade) ? 
-                    y - trilho.y_final : velocidade
-                );
-                mover_em_y(-distancia_percorrida);
-            }
-        } else if (trilho.y_inicial == trilho.y_final) {
-            // y = cte → move em X (horizontal)
-            if (trilho.x_final > trilho.x_inicial) {
-                // Trem se movimento esquerda → direita (incrementa x)
-                distancia_percorrida = ((trilho.x_final - x < velocidade) ?
-                    trilho.x_final - x : velocidade
-                );
-                mover_em_x(distancia_percorrida);
-            } else if (trilho.x_final < trilho.x_inicial) {
-                // Trem se movimenta direita → esquerda (decrementa x)
-                distancia_percorrida = ((x - trilho.x_final < velocidade) ?
-                    x - trilho.x_final : velocidade
-                );
-                mover_em_x(-distancia_percorrida);
-            }
-        }
-        
-        emit updateGUI(ID, x, y);
-        msleep(100);
-
-        if (x == trilho.x_final && y == trilho.y_final) {
-            printf("O trem %d deseja acessar o trilho %d\n", ID, trilho.id_proximo);
-            sem_post(&sem_trilhos[trilho.id - 1]);
-            sem_wait(&sem_trilhos[trilho.id_proximo - 1]);
-            // sem_wait(&sem_trilhos[trilho_pre_reserva -1]);
-            // sem_post(&sem_trilhos[trilho.id_proximo - 1]);
-            // sem_post(&sem_trilhos[trilho_pre_reserva -1]);
-            atual++;
-        }
-    }
-}
-
-//Função a ser executada após executar trem->START
 void Trem::run() {
+    const int *percurso_por_pontos = percursos_por_pontos[ID - 1];
+    const int *percurso_por_trilhos = percursos_por_trilhos[ID - 1];
+    
+    int ponto_index = 0;
+    int trilho_index = 0;
+    
+    int ponto_atual = percurso_por_pontos[ponto_index];
+    int proximo_ponto = percurso_por_pontos[ponto_index + 1];
+    
+    int trilho_ocupado = 0;
+    int proximo_trilho = percurso_por_trilhos[trilho_index];
+    
+    while(TRUE) {
+        
+        if (estado_trem == ESPERANDO) {
 
-    percorrer_trilho(); 
+            sem_wait(&sem_trilhos[proximo_trilho - 1]);
+            trilho_ocupado = proximo_trilho;
+            estado_trem = OCUPADO;
+
+        } else if (estado_trem == OCUPADO) {
+
+            // SE MOVE
+            const int *coordenada_atual = coordenadas[ponto_atual - 1];
+            const int *coordenada_seguinte = coordenadas[proximo_ponto - 1];
+
+            const int x_inicial = coordenada_atual[0];
+            const int y_inicial = coordenada_atual[1];
+            const int x_final = coordenada_seguinte[0];
+            const int y_final = coordenada_seguinte[1];
+
+            const int velocidade_atual = get_velocidade();
+            
+            // Checa direção do trem:
+            if (x_inicial == x_final) {                 // x = cte → move em y (vertical)
+
+                const int delta_y = y_final - y_inicial;
+                const int distancia_restante = abs(y_final - y);
+                int distancia_a_percorrer, sentido = 0;
+
+                if (delta_y > 0) {
+                    sentido = 1;                        // topo → base (incrementa y)
+                } else if (delta_y < 0) {
+                    sentido = -1;                       // base → topo (decrementa y)
+                }
+                distancia_a_percorrer = ((distancia_restante < velocidade_atual) ?
+                    distancia_restante : velocidade_atual
+                );
+                mover_em_y(distancia_a_percorrer * sentido);
+
+            } else if (y_inicial == y_final) {          // y = cte → move em x (horizontal)
+                const int delta_x = x_final - x_inicial;
+                const int distancia_restante = abs(x_final - x);
+                int distancia_a_percorrer, sentido = 0;
+
+                if (delta_x > 0) {
+                    sentido = 1;                        // esquerda → direita (incrementa x)
+                } else if (delta_x < 0) {
+                    sentido = -1;                       // direita → esquerda (decrementa x)
+                }
+                distancia_a_percorrer = ((distancia_restante < velocidade_atual) ?
+                    distancia_restante : velocidade_atual
+                );
+                mover_em_x(distancia_a_percorrer * sentido);
+            }
+            
+            // Atualiza estado do trem:
+            if (x == x_final && y == y_final) {
+                // Atualiza ponto
+                ponto_atual = proximo_ponto;
+                trilho_index = ponto_index;
+                ponto_index = (ponto_index + 1) % 5;
+                proximo_ponto = percurso_por_pontos[(ponto_index + 1) % 5];
+                
+                // Libera o trilho usado
+                sem_post(&sem_trilhos[trilho_ocupado - 1]);
+                proximo_trilho = percurso_por_trilhos[(trilho_index + 1) % 5];
+
+                estado_trem = ESPERANDO;
+            }
+        }
+        emit updateGUI(ID, x, y);
+        msleep(60);
+    }
 }
-
 
 
