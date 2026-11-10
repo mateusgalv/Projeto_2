@@ -29,7 +29,10 @@
                     <string notr="true">QLabel { background: red }</string>
                 </property>
                 <property name="text">
-                    <string>T1</string>
+                    <string>a</string>
+                </property>
+                <property name="alignment">
+                    <set>Qt::AlignCenter</set>
                 </property>
             </widget>
             <!-- TREM 2 -->
@@ -44,7 +47,10 @@
                     <string notr="true">QLabel { background: yellow }</string>
                 </property>
                 <property name="text">
-                    <string>T2</string>
+                    <string>b</string>
+                </property>
+                <property name="alignment">
+                    <set>Qt::AlignCenter</set>
                 </property>
             </widget>
             <!-- TREM 3 -->
@@ -56,10 +62,13 @@
                     </rect>
                 </property>
                 <property name="styleSheet">
-                    <string notr="true">QLabel { background: blue }</string>
+                    <string notr="true">QLabel { background: pink }</string>
                 </property>
                 <property name="text">
-                    <string>T3</string>
+                    <string>c</string>
+                </property>
+                <property name="alignment">
+                    <set>Qt::AlignCenter</set>
                 </property>
             </widget>
             <!-- TREM 4 -->
@@ -74,7 +83,10 @@
                     <string notr="true">QLabel { background: green }</string>
                 </property>
                 <property name="text">
-                    <string>T4</string>
+                    <string>d</string>
+                </property>
+                <property name="alignment">
+                    <set>Qt::AlignCenter</set>
                 </property>
             </widget>
             <!-- TREM 5 -->
@@ -89,7 +101,10 @@
                     <string notr="true">QLabel { background: cyan }</string>
                 </property>
                 <property name="text">
-                    <string>T5</string>
+                    <string>e</string>
+                </property>
+                <property name="alignment">
+                    <set>Qt::AlignCenter</set>
                 </property>
             </widget>
             <!-- TREM 6 -->
@@ -101,30 +116,16 @@
                     </rect>
                 </property>
                 <property name="styleSheet">
-                    <string notr="true">QLabel { background: purple }</string>
+                    <string notr="true">QLabel { background: lightblue }</string>
                 </property>
                 <property name="text">
-                    <string>T6</string>
+                    <string>f</string>
+                </property>
+                <property name="alignment">
+                    <set>Qt::AlignCenter</set>
                 </property>
             </widget>
-            
-            <!-- <widget class="QLabel" name="teste">
-                <property name="geometry">
-                    <rect>
-                        <x>50</x>
-                        <y>250</y>
-                        <width>10</width>
-                        <height>10</height>
-                    </rect>
-                </property>
-                <property name="styleSheet">
-                    <string notr="true">QLabel { background: pink }</string>
-                </property>
-                <property name="text">
-                    <string/>
-                </property>
-            </widget> -->
-
+        
             <widget class="QLabel" name="label_trilho1_esq">
                 <property name="geometry">
                     <rect>

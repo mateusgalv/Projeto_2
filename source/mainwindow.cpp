@@ -66,18 +66,18 @@ MainWindow::MainWindow(QWidget *parent) :
 
     auto adiciona_linha_vel = [&](const QString &texto, QSlider *slider) {
     QHBoxLayout *linha = new QHBoxLayout;
-    linha->addWidget(new QLabel(texto));   // texto à esquerda
-    linha->addWidget(slider);              // slider à direita
+    linha->addWidget(new QLabel(texto));
+    linha->addWidget(slider); 
     vbox->addLayout(linha);
     };
 
-    adiciona_linha_vel(tr("T1"), ui->slider_1);
-    adiciona_linha_vel(tr("T2"), ui->slider_2);
-    adiciona_linha_vel(tr("T3"), ui->slider_3);
-    adiciona_linha_vel(tr("T4"), ui->slider_4);
-    adiciona_linha_vel(tr("T5"), ui->slider_5);
-    adiciona_linha_vel(tr("T6"), ui->slider_6);
-    adiciona_linha_vel(tr("TM"),  ui->slider_geral);
+    adiciona_linha_vel(tr("a"), ui->slider_1);
+    adiciona_linha_vel(tr("b"), ui->slider_2);
+    adiciona_linha_vel(tr("c"), ui->slider_3);
+    adiciona_linha_vel(tr("d"), ui->slider_4);
+    adiciona_linha_vel(tr("e"), ui->slider_5);
+    adiciona_linha_vel(tr("f"), ui->slider_6);
+    adiciona_linha_vel(tr("m"),  ui->slider_geral);
     
     groupBox->setGeometry(50, 400, 340, 300);   // ajuste x, y, largura, altura
 }
